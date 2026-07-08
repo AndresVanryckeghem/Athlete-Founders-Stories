@@ -80,10 +80,10 @@
     stroke-dasharray:600;stroke-dashoffset:600;animation:fsw-dash 1.6s ease .5s forwards;
     filter:drop-shadow(0 0 6px rgba(61,169,255,.6));
   }
-  #fsw-choice p.sub{font-size:1.05rem;line-height:1.65;color:rgba(255,255,255,.55);max-width:440px;margin:0 auto 2.8rem;animation:fsw-rise .8s ease .3s both}
+  #fsw-choice p.sub{font-size:1.05rem;line-height:1.65;color:rgba(255,255,255,.55);max-width:520px;margin:0 auto 2.8rem;animation:fsw-rise .8s ease .3s both}
   .choice-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:center;animation:fsw-rise .8s ease .42s both}
   .choice-card{
-    position:relative;width:212px;min-height:236px;box-sizing:border-box;padding:30px 24px;border-radius:18px;cursor:pointer;overflow:hidden;
+    position:relative;width:240px;min-height:236px;box-sizing:border-box;padding:30px 24px;border-radius:18px;cursor:pointer;overflow:hidden;
     background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);
     transition:transform .25s cubic-bezier(.22,1,.36,1),border-color .25s,background .25s,box-shadow .25s;
     display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;
@@ -107,9 +107,12 @@
   .choice-card .go span{animation:fsw-arrow 1s ease-in-out infinite}
   .choice-or{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);align-self:center;padding:0 2px}
   @media(max-width:600px){
-    .choice-row{flex-direction:column;flex-wrap:nowrap;width:100%;max-width:340px;gap:14px}
+    .choice-row{flex-direction:column;flex-wrap:nowrap;width:90%;max-width:400px;gap:14px}
     .choice-card{width:100%;box-sizing:border-box}
     .choice-or{padding:2px 0}
+    .eyebrow{letter-spacing:.12em!important;font-size:10px!important}
+    .eyebrow strong{font-size:12px!important}
+    .sub{max-width:90%!important;font-size:.95rem!important}
   }
 
   /* ---- Audio screen ---- */
