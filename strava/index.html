@@ -1,0 +1,348 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Strava</title>
+
+<!-- ============ Google Analytics 4 ============ -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0KBJV1V4W7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-0KBJV1V4W7');
+
+  // === Per-story config — change this one line per story ===
+  window.STORY_NAME = "strava";
+
+  // Small helper: every event we send is tagged with story_name automatically,
+  // AND posted to the parent window so an embedding site (e.g. Webflow) can forward
+  // it to its own GA4 even if the iframe's analytics is blocked by the browser.
+  // Read recipient identifier from the URL, e.g. ?r=john-smith
+  function getRecipientId(){
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('r') || params.get('recipient') || '(unidentified)';
+    } catch(e) { return '(unidentified)'; }
+  }
+  var RECIPIENT_ID = getRecipientId();
+
+  var EXIT_EVENTS = { read_session_end:1, audio_session_end:1 }; // events fired as the page is closing — must use guaranteed delivery
+
+  window.track = function(eventName, params){
+    var payload = Object.assign({ story_name: window.STORY_NAME, recipient_id: RECIPIENT_ID }, params || {});
+    if (EXIT_EVENTS[eventName]) {
+      payload.transport_type = 'beacon'; // forces the browser to guarantee delivery even as the tab closes
+    }
+    try { gtag('event', eventName, payload); } catch(e) {}
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ source: 'fsw-story', name: eventName, params: payload }, '*');
+      }
+    } catch(e) {}
+  };
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  html,body{margin:0;background:#0d1b1e}
+  @keyframes fsw-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fsw-glow{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:.85;transform:translate(-50%,-50%) scale(1.08)}}
+  @keyframes fsw-dash{to{stroke-dashoffset:0}}
+  @keyframes fsw-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes fsw-arrow{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
+  /* ---- Landing choice screen ---- */
+  #fsw-choice{
+    font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    position:fixed;inset:0;z-index:50;color:#f0ede8;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:2rem;overflow:hidden;
+    background:radial-gradient(circle at 50% 38%,#2a1808 0%,#0d1b1e 60%);
+  }
+  #fsw-choice.hidden{display:none}
+  #fsw-choice::before{
+    content:"";position:absolute;width:680px;height:680px;border-radius:50%;
+    top:30%;left:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(252,76,2,.16) 0%,rgba(252,76,2,0) 65%);
+    filter:blur(8px);animation:fsw-glow 5.5s ease-in-out infinite;pointer-events:none;
+  }
+  .choice-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+  #fsw-choice .eyebrow{font-size:11px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:rgba(252,76,2,.65);margin-bottom:1.2rem;animation:fsw-rise .7s ease .05s both}\n  .eyebrow strong{font-weight:800;color:rgba(252,76,2,.95)}
+  #fsw-choice h1{
+    font-size:clamp(4rem,12vw,8rem);font-weight:900;color:#FC4C02;letter-spacing:-.04em;line-height:.9;margin:0;
+    text-shadow:0 0 40px rgba(252,76,2,.35);animation:fsw-rise .8s cubic-bezier(.22,1,.36,1) .12s both;
+  }
+  .pulse-line{width:min(320px,70vw);height:46px;margin:.4rem 0 1.1rem;animation:fsw-rise .8s ease .2s both}
+  .pulse-line path{
+    fill:none;stroke:#FC4C02;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:600;stroke-dashoffset:600;animation:fsw-dash 1.6s ease .5s forwards;
+    filter:drop-shadow(0 0 6px rgba(252,76,2,.6));
+  }
+  #fsw-choice p.sub{font-size:1.05rem;line-height:1.65;color:rgba(255,255,255,.55);max-width:440px;margin:0 auto 2.8rem;animation:fsw-rise .8s ease .3s both}
+  .choice-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:center;animation:fsw-rise .8s ease .42s both}
+  .choice-card{
+    position:relative;width:212px;padding:30px 24px;border-radius:18px;cursor:pointer;overflow:hidden;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);
+    transition:transform .25s cubic-bezier(.22,1,.36,1),border-color .25s,background .25s,box-shadow .25s;
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+  }
+  .choice-card::after{
+    content:"";position:absolute;inset:0;border-radius:18px;opacity:0;transition:opacity .25s;
+    background:linear-gradient(120deg,transparent 30%,rgba(252,76,2,.10) 50%,transparent 70%);
+    background-size:200% 100%;
+  }
+  .choice-card:hover{transform:translateY(-6px);border-color:rgba(252,76,2,.55);background:rgba(252,76,2,.07);box-shadow:0 18px 40px rgba(0,0,0,.45),0 0 0 1px rgba(252,76,2,.15)}
+  .choice-card:hover::after{opacity:1;animation:fsw-shimmer 1.4s linear infinite}
+  .choice-card .ic{font-size:38px;line-height:1;transition:transform .25s}
+  .choice-card:hover .ic{transform:scale(1.12)}
+  .choice-card .ct{font-size:1.25rem;font-weight:800;color:#fff;letter-spacing:-.01em}
+  .choice-card .cd{font-size:.82rem;font-weight:400;color:rgba(255,255,255,.45);line-height:1.5}
+  .choice-card .go{
+    margin-top:4px;font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    color:#FC4C02;opacity:0;transform:translateY(4px);transition:all .25s;display:flex;align-items:center;gap:5px;
+  }
+  .choice-card:hover .go{opacity:1;transform:translateY(0)}
+  .choice-card .go span{animation:fsw-arrow 1s ease-in-out infinite}
+  .choice-or{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);align-self:center;padding:0 2px}
+  @media(max-width:600px){
+    .choice-row{flex-direction:column;flex-wrap:nowrap;width:100%;max-width:340px;gap:14px}
+    .choice-card{width:100%;box-sizing:border-box}
+    .choice-or{padding:2px 0}
+  }
+
+  /* ---- Audio screen ---- */
+  #fsw-audio{
+    font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    position:fixed;inset:0;z-index:50;color:#f0ede8;
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:2rem;overflow:hidden;
+    background:radial-gradient(circle at 50% 40%,#2a1808 0%,#0d1b1e 62%);
+  }
+  #fsw-audio.show{display:flex;animation:fsw-rise .5s ease both}
+  #fsw-audio::before{
+    content:"";position:absolute;width:600px;height:600px;border-radius:50%;
+    top:34%;left:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(252,76,2,.12) 0%,rgba(252,76,2,0) 65%);
+    filter:blur(8px);animation:fsw-glow 5.5s ease-in-out infinite;pointer-events:none;
+  }
+  #fsw-audio .a-back{
+    position:absolute;top:22px;left:22px;z-index:2;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+    padding:9px 18px;border-radius:24px;cursor:pointer;transition:all .18s;
+  }
+  #fsw-audio .a-back:hover{color:#fff;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+  #fsw-audio .a-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+  #fsw-audio .eyebrow{font-size:11px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:rgba(252,76,2,.6);margin-bottom:1.1rem}
+  #fsw-audio h2{font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:#FC4C02;letter-spacing:-.02em;line-height:1.05;margin:0 0 .7rem;text-shadow:0 0 30px rgba(252,76,2,.25)}
+  #fsw-audio p.sub{font-size:.98rem;line-height:1.6;color:rgba(255,255,255,.5);max-width:440px;margin:0 auto 2.4rem}
+  .player{
+    width:100%;max-width:460px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:26px 24px;
+    box-shadow:0 18px 50px rgba(0,0,0,.4);
+  }
+  .player audio{width:100%;height:42px;outline:none}
+  .player .note{margin-top:16px;font-size:.78rem;color:rgba(255,255,255,.3);line-height:1.5}
+  .player .err{margin-top:14px;font-size:.8rem;color:#ff9b9b;display:none}
+
+  /* ---- Floating Listen button shown during Read ---- */
+  #fsw-listen-btm{
+    position:fixed;bottom:18px;right:24px;z-index:60;display:none;align-items:center;gap:6px;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+    padding:11px 20px;border-radius:30px;transition:all .18s;
+    background:rgba(13,27,30,.82);backdrop-filter:blur(8px);
+    border:1px solid rgba(252,76,2,.45);color:#FC4C02;
+  }
+  #fsw-listen-btm.show{display:inline-flex;animation:fsw-rise .4s ease both}
+  #fsw-listen-btm:hover{color:#0d1b1e;background:#FC4C02;border-color:#FC4C02}
+  @media(max-width:600px){
+    #fsw-listen-btm{
+      position:static;display:none;margin:4px auto 22px;
+      bottom:auto;right:auto;padding:11px 22px;font-size:13px;
+    }
+    #fsw-listen-btm.show{display:flex;width:max-content;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ Landing choice screen ============ -->
+<div id="fsw-choice">
+  <div class="choice-inner">
+    <p class="eyebrow"><strong>Playbook:</strong> how to launch a sports app</p>
+    <h1>STRAVA</h1>
+    <svg class="pulse-line" viewBox="0 0 320 46" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,23 L120,23 L132,23 L140,8 L150,40 L160,14 L168,30 L178,23 L320,23"/>
+    </svg>
+    <p class="sub">How two rowers who lost their team after college built the platform that turned word of mouth into 100 million athletes.</p>
+    <div class="choice-row">
+      <div class="choice-card" id="pick-audio">
+        <span class="ic">🎧</span>
+        <span class="ct">Listen</span>
+        <span class="cd">Andres's notes on what to learn and apply to your own playbook</span>
+        <span class="go">Press play <span>→</span></span>
+      </div>
+      <div class="choice-or">or</div>
+      <div class="choice-card" id="pick-read">
+        <span class="ic">📖</span>
+        <span class="ct">Read</span>
+        <span class="cd">The full story, chapter by chapter</span>
+        <span class="go">Start reading <span>→</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Audio player screen ============ -->
+<div id="fsw-audio">
+  <button class="a-back" id="audio-back">‹ Back</button>
+  <div class="a-inner">
+    <p class="eyebrow">Now Playing</p>
+    <h2>The Strava Story</h2>
+    <p class="sub">Andres's notes on what to learn and apply to your own playbook. Press play below.</p>
+    <div class="player">
+      <audio id="story-audio" controls preload="metadata">
+        <!-- This relative path works once audio/ sits next to index.html in your repo -->
+        <source src="strava-story.mp3" type="audio/mpeg">
+        <source src="strava-story.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+      </audio>
+      <p class="err" id="audio-err">Audio file not found. Make sure <b>strava-story.mp3</b> exists in the repo next to this page.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EXISTING: your interactive read app mounts here ============ -->
+<div id="fsw-mount"></div>
+
+<!-- ============ Floating control shown while reading (NEW) ============ -->
+<button id="fsw-listen-btm" type="button">🎧 Listen</button>
+
+<script>
+/* ---------- choice / audio / read screen wiring + analytics ---------- */
+(function(){
+  var choice  = document.getElementById('fsw-choice');
+  var audio   = document.getElementById('fsw-audio');
+  var mount   = document.getElementById('fsw-mount');
+  var player  = document.getElementById('story-audio');
+  var errEl   = document.getElementById('audio-err');
+  var listenBtm = document.getElementById('fsw-listen-btm');
+
+  // ---- analytics state ----
+  var modeEnterTime = null;     // when current mode (audio/read) started
+  var currentMode = 'landing';  // 'landing' | 'audio' | 'read'
+  var audioMilestones = {};     // {25:true, 50:true,...}
+  var audioPlayStart = null;    // wall clock when last 'play' fired
+
+  function secondsSince(ts){ return ts ? Math.round((Date.now() - ts)/1000) : 0; }
+
+  function leaveMode(){
+    if(currentMode === 'read' && modeEnterTime){
+      var rs = secondsSince(modeEnterTime);
+      if(rs > 0 && rs < 3600){ // sanity cap: ignore stale/garbage timers over 1hr
+        window.track && window.track('read_session_end', { seconds_in_read: rs });
+      }
+    }
+    if(currentMode === 'audio' && modeEnterTime){
+      var as_ = secondsSince(modeEnterTime);
+      if(as_ > 0 && as_ < 3600){
+        window.track && window.track('audio_session_end', { seconds_in_audio_screen: as_ });
+      }
+    }
+    modeEnterTime = null; // always clear after leaving, prevents double-fire/double-count
+  }
+  function enterMode(name){
+    leaveMode();
+    currentMode = name;
+    modeEnterTime = (name === 'landing') ? null : Date.now();
+  }
+  window.addEventListener('pagehide', leaveMode);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'hidden'){
+      leaveMode();
+    } else if(document.visibilityState === 'visible' && currentMode && currentMode !== 'landing' && !modeEnterTime){
+      modeEnterTime = Date.now();
+    }
+  });
+
+  function showChoice(){
+    choice.classList.remove('hidden');
+    audio.classList.remove('show');
+    listenBtm.classList.remove('show');
+    mount.style.display = 'none';
+    if(player){ player.pause(); }
+    enterMode('landing');
+  }
+  function showAudio(){
+    choice.classList.add('hidden');
+    audio.classList.add('show');
+    listenBtm.classList.remove('show');
+    mount.style.display = 'none';
+    enterMode('audio');
+    window.track && window.track('choice_made', { mode: 'audio' });
+  }
+  function showRead(){
+    choice.classList.add('hidden');
+    audio.classList.remove('show');
+    listenBtm.classList.add('show');
+    mount.style.display = 'block';
+    if(player){ player.pause(); }
+    if(window.__fswStart){ window.__fswStart(); }
+    enterMode('read');
+    window.track && window.track('choice_made', { mode: 'read' });
+  }
+
+  document.getElementById('pick-audio').addEventListener('click', showAudio);
+  document.getElementById('pick-read').addEventListener('click', showRead);
+  document.getElementById('audio-back').addEventListener('click', showChoice);
+  listenBtm.addEventListener('click', showAudio);
+
+  // ---- audio analytics ----
+  if(player){
+    player.addEventListener('error', function(){ errEl.style.display='block'; });
+    player.addEventListener('play', function(){
+      audioPlayStart = Date.now();
+      window.track && window.track('audio_play', { current_time: Math.round(player.currentTime||0) });
+    });
+    player.addEventListener('pause', function(){
+      if(audioPlayStart){
+        window.track && window.track('audio_pause', {
+          current_time: Math.round(player.currentTime||0),
+          seconds_listened: secondsSince(audioPlayStart)
+        });
+        audioPlayStart = null;
+      }
+    });
+    player.addEventListener('ended', function(){
+      window.track && window.track('audio_complete', {
+        duration: Math.round(player.duration||0),
+        seconds_listened: secondsSince(audioPlayStart)
+      });
+      audioPlayStart = null;
+    });
+    player.addEventListener('timeupdate', function(){
+      if(!player.duration) return;
+      var pct = Math.floor((player.currentTime / player.duration) * 100);
+      [10,25,50,75,90].forEach(function(m){
+        if(pct >= m && !audioMilestones[m]){
+          audioMilestones[m] = true;
+          window.track && window.track('audio_progress', { percent: m });
+        }
+      });
+    });
+  }
+
+  // end-of-session tracking handled by enterMode's pagehide/visibilitychange listener above;
+
+  // first event: page open
+  window.track && window.track('story_opened');
+})();
+</script>
+
+<!-- ============ EXISTING: your original story app (unchanged logic) ============ -->
+<script>
+!function(){if(!window.__fswI){window.__fswI=!0;var e=document.getElementById("fsw-mount");if(e){var t=e.attachShadow({mode:"closed"}),n={title:"Strava",tagline:"How two rowers who lost their team after college built the platform that turned word of mouth into 100 million athletes.",chapters:[{title:"Two Rowers Who Lost Their Team",beats:["#Mark Gainey and Michael Horvath met in 1987 on the Harvard crew team, almost by accident for both of them. Mark had wanted track and field but had stress fractures and was burned out after years of competitive running.","Michael had wanted sailing, but the sailing team's first meeting didn't seem like it'd be a lot of fun, with only six or seven serious people. The crew team's meeting the next evening had sixty or seventy people having a lot of fun. Both joined crew instead.","The friendship was forged on one specific day: a 1989 drive down to Princeton to watch the Harvard Yale Princeton race, in Mark's old Jeep CJ 5 with a soft top, in pouring rain, with barely any heat.","They drove down and back the same day. ^'We probably had spent more time in that car that day than we had spent together previous to that.'`","Then they graduated, and the team disappeared. ^'I graduated and when I graduated poof it disappeared. This whole idea of sort of having my tribe, my team that I could hang out with and that kept me inspired was gone.'`","That specific void, not a market gap, not a business plan, is where the idea started. ^'We kind of missed that feeling of being connected to a bunch of people around fitness.'`"]},{title:"The Virtual Locker Room, 15 Years Too Early",beats:["#In 1995, fresh into their careers, Mark cold calling entrepreneurs for a venture firm, Michael a new economics professor at Stanford, they wrote an actual business plan. They called it ^Kana Sports`, named after Mark's dog.","The idea: ^'Could we use the internet to bring all of our old buddies back together, who now spread across the globe and are in all their jobs, and basically share their workouts?'`","They pitched it to a website development firm that specialized in sporting goods companies. The verdict was blunt: it couldn't be done, and ^'no one's going to share personal information on the internet with complete strangers.'`","Mark accepts the verdict on its merits today: ^'We were way too early. We were about 15 years too early in terms of the idea. The technology was not there to capture the activities, and frankly even the consumer behavior wasn't there.'`","So they pivoted entirely. The same web firm had introduced them to a real, adjacent problem: sporting goods companies were drowning in customer emails with no system to respond.","Mark and Michael built that instead, a company called ^Kana Communications.` It grew to ^1,200 employees and hundreds of millions in revenue`, and went public on NASDAQ. The virtual locker room idea was shelved, not killed."]},{title:"The Condo in Vail",beats:["#By 2005 and 2006, both founders had separately become available again. Michael was leaving a biotech CFO role, Mark was closing out a difficult personal chapter. ^'I remember, okay, here's our chance. He's coming out of that and I'm stable, knock on wood. We're too young not to think that there isn't something else to go do here.'`","In the summer of 2006, they sat down together for several days in a small condo in ^Vail, Colorado`, specifically to brainstorm what to build next. They explicitly didn't want to repeat Kana.","^'We don't want to do that again. It would be easy to pull out the playbook and replicate another enterprise software company. But there was an intellectual curiosity. Let's go do something we've never done before.'`","Before discussing their own idea at all, they ran a deliberate exercise: ^'We spent some time thinking about companies that we really admired. We made a list of, if we had been founders of XYZ Company, what would it have been?'`","The list wasn't Silicon Valley names. It was ^Patagonia, Oakley, and Virgin`, ^'these great consumer brands that sort of stood the test of time, aspirational brands.'`","They considered other ideas too, including filtered water delivery. It took twelve to eighteen months of circling before the old locker room idea came back into focus, and only because something real had changed underneath it.","Two specific things: GPS devices had become good enough to capture an activity, and ^Facebook had just proven that people would share personal data online if there was value in it.` That second condition was exactly the one that killed the idea in 1995."]},{title:"The Guy Across the River",beats:["#On ^December 20, 2006`, Michael's 40th birthday, he had coffee with a neighbor: ^Davy Kitchell`, who lived in Norwich, Vermont, just across the river from Michael in Hanover, New Hampshire.","Davy was a rower at Dartmouth, not an engineer and not a cyclist. He'd been experimenting on his own, for no commercial reason, using a Garmin GPS device to compare his own times rowing the same stretch of river.","^'You're rowing on a river, you don't know whether you went faster today on the same stretch than yesterday.'` He'd started wondering if the same trick worked for cycling.","Mark and Michael didn't hire him or brief him. They just told him to keep going. ^'There was something interesting there that we said we ought to keep talking, because you seem to be working on the actual R&D of something that could be important and fit into our world as well.'`","It took roughly two years. By spring and summer of 2008, Davy's tinkering had become something real: the ^Strava Segment Leaderboard`, the idea that riders could compare their times on the exact same climb or stretch of road, at different points in time.","Davy personally holds the patent for Segments, licensed to Strava. Mark calls the whole encounter pure luck: ^'Sometimes you just have to have a spark that comes from the universe.'`"]},{title:"Ten People, Three Weeks, a Green Website",beats:["#In the summer of 2008, they built the smallest possible test. Davy made a deliberately basic website, nicknamed ^'the Green Machine'` for its color scheme. They put exactly ^ten people on it`, five on the East Coast around Hanover, five on the West Coast, all personally recruited, not strangers.","The test ran for ^three weeks, during the July 2008 Tour de France.` Everyone needed a Garmin device. The incentive was simple: East Coast versus West Coast, silly low stakes competitions, whoever posted the fastest ride that day might win a pair of socks.","Two of the ten were ^Mark Shaw and Chris Donahue`, former Kana employees the founders already trusted deeply. Their reaction during the test became the actual signal.","One of them admitted, ^'Yesterday I called in sick to work so I could go out and ride my bike.'` Mark's response: ^'I was like, oh wow, we are changing behavior, that's great. We have found something really unique.'`","They weren't measuring revenue. They were watching the emails fly back and forth, and the trash talk. ^'It was clear very quickly that the cyclists who were using it were infatuated by the information they were seeing. There was a high level of engagement with this data and the storytelling.'`","The conclusion, almost word for word: ^'We may not have the business model nailed down here. There's a lot of specifics, but it was enough of an energy there and enough excitement after that quick three weeks that we said, we've got something.'`","They did not have a business model when they decided to commit. They had a reaction."]},{title:"Mile Deep, Not Mile Wide",beats:["#Their go to market strategy got a name they still use: ^'inch wide, mile deep.'` Pick one narrow audience. Go deep, be authentic, become the obvious leader there, then expand.","Their target customer had an internal nickname: ^'MAMIL'`, middle aged men in Lycra. ^'Frankly we were sort of middle aged men in Lycra and we needed this solution so we just started building.'`","The reasoning was deliberately about spending behavior, not popularity. In 2007 and 2008, GPS wasn't yet viable in phones, so tracking required dedicated hardware. Cyclists already spent heavily on gear, power meters, bike computers. ^'Runners don't love to spend money. They'd love to buy their shoes and their shorts and that's it.'`","Cycling had real money already moving through it, and almost no one building software for it. That gap, not a popularity contest, is what made the niche worth picking.","This wasn't their first time betting on a niche either. They'd done it once already at Kana, going deep on customer email instead of trying to serve every part of online business at once.","^'Even if it's just a niche, if you're number one, if you're the leader in that space, you develop thought leadership, you develop a voice in the market.'`","That earlier experience is exactly why they trusted the same instinct with Strava. Winning a small space first builds two things you need before you can expand: credibility with the people who matter, and confidence inside your own team that the next bet is worth taking.","^'With confidence comes the courage to now begin to think about expansion.'`","A standalone exercise worth keeping intact: the Starbucks test. Years into the company, Mark sat in a Menlo Park Starbucks with a subscription business consultant who asked him to describe his target customer.","He pointed to six guys in cycling kits at a corner table, post ride coffees in hand: ^'Right there, if you look at those six guys, that's our target audience.'`","Her point, and his lesson from it: most founders, asked the same question, gesture at the whole café. ^'I will challenge you to go into a Starbucks and try to figure out who that target audience is that you're initially going after.'`","If you can't point to a specific cluster of real people, your market is still too vague.","The principle stated as direct advice to other founders: ^'Don't get confused between vision and go to market. Vision is the long term dream, it's the brass ring you never quite get to. Go to market is a waypoint. In the case of Strava, our go to market strategy was cycling.'`"]},{title:"We Did Everything Wrong, On Purpose",beats:["#Launch day was ^August 18, 2009.` Cycling only. Web only. The actual mechanics of using it were brutal: own a Garmin GPS device, wear it during the ride, come home, physically plug it into a computer.","Then wait for the data to upload into Garmin's own servers first, and only then did it flow from Garmin into Strava.","This was a deliberate trade off, not an oversight. Smartphones in 2008 had battery life too weak to survive a long ride and GPS chips too inaccurate to trust. Garmin was the only device clean enough that the feedback Strava gave back would actually mean something.","^'We tried to make participation in Strava as hard as possible. That was, let's make this extremely hard, and then start reducing friction. Slowly but surely.'`","To solve not enough people owning a Garmin, Mark and Michael personally went to ^Costco` to buy devices in bulk, at one point spending roughly ^$52,000` buying every Garmin 350 the store had in stock, to hand out to friends, on the condition they actually used Strava.","They also got fleeced by eBay sellers who took checks for hundreds of devices that never arrived. ^'We did everything wrong, but what we were doing is really going grassroots.'`","They also showed up in person at ^local cycling clubs.` Their actual first customer is remembered only by initials, DB. ^'He's our first customer, he's still on Strava eleven years later.'`","The internal phrase for this whole category of tactic: ^'do things that don't scale.'` Mark adds: ^'I would say we probably did this perhaps to an extreme level in the early days of Strava.'`"]},{title:"Build for One Person First",beats:["#Even while chasing community and camaraderie, the actual product had a stricter, almost contradictory rule baked into it early: ^'We had to assume we had one customer, one cyclist, who was uploading one ride on Strava. How do we make that experience valuable so that they want to come back again?'`","The internal name for this was ^single player mode versus multiplayer mode.` ^'I've had this insight that as people have joined Strava historically, they often don't join because they're trying to join the community. They join because they're looking for a way to track their own personal activities.'`","Community features were deliberately delayed. ^'A couple years in we got very excited about the community features, but we had to grow into that.'` The social layer was treated as a multiplier on value already proven to exist for a single person, never the starting premise.","The conversations with early users directly shaped two specific features. Cyclists, it turned out, remember ^the climb` on any ride above everything else, so Strava built tools to measure and rank performance specifically on climbs.","They also obsessed over ^power and wattage data`, so Strava found ways to surface that. ^'We didn't call them customers, they were our partners in this project.'`"]},{title:"Paying Before They Had a Crowd",beats:["#Strava launched the subscription ^within its first year`, not after scale, not after proving the model. At launch, the offer was usage based: upload your first five activities a month free, the sixth time, you pay.","Conversion among that small early group was strong. ^'Low volume, high conversion'` became the real early signal of product market fit, not total user count, and that signal is what kept them investing in the paid tier rather than waiting to earn monetization with scale.","The reasoning for skipping advertising entirely from day one had two parts. First, an experience argument: ads are ^'a distraction. It may work economically for the advertiser, it may work great for the platform, but it didn't feel like it was in the best interest of the actual experience or the customer.'`","Second, a structural one: ^'you could basically turn your customer into the product, so that you're selling their attention. That did not make sense to us from the very early days.'`"]},{title:"When Mobile Broke the Business Model",beats:["#Web only growth was brutally slow, roughly ^100 new users a week.` It took two and a half to three years, until ^2012`, to build a real mobile team, by Mark's own account, far too long. Competitors like RunKeeper were already among the first 100 apps in the App Store.","The first bare bones mobile attempt, in 2011, was bare bones and ultimately wasn't successful. The fix exposed a second mistake: that app let you record a ride on your phone, but you still had to go to a website to see your results.","The extra step killed adoption all over again. They had to rebuild a second time to make the whole experience live entirely on mobile.","Once they removed that friction completely, the growth curve broke open: from roughly 100 signups a week to ^10,000 a day`, then ^100,000 in a single day` after an App Store feature. ^'The unlock isn't more features, it's removing every hoop someone has to jump through to get their first piece of data in.'`","But going mobile broke the original usage based paywall. Once the phone became people's primary recording tool, capping someone at five uploads a month meant cutting off their workout recorder entirely, unacceptable.","Strava had to rebuild the business model itself into ^feature based freemium`: most features free, specific features paywalled.","This new model was harder to explain. A usage cap is binary and obvious. A feature wall is fuzzy, for years the dominant user feedback was that free was good enough, and Mark admits, ^'we were kind of right.'` It took years to build enough exclusive value into the paid tier to change that.","The rule that eventually emerged: keep everything that builds ^connection` free, since every active free user adds value to the whole platform just by posting. Put ^competition and goal achievement` tools, leaderboards, training plans, event prep, behind the paywall. Free is community. Paid is striving."]},{title:"The Cyclists Felt Betrayed",beats:["#Expansion to other sports was deliberately delayed. ^'We knew we'd get to the other sports. We knew, but we didn't know when. We didn't really do it in earnest until 2012.'`","That's three full years after launch, and only once they had clear proof, in numbers and press coverage, that they were the definitive number one platform for cyclists specifically.","Running launched as a ^completely separate app`, not a feature bolted onto cycling. The first attempt assumed the cycling product could simply be reskinned, the old 80 20 rule, assuming 80% would transfer. It produced, in Mark's own word, ^a horrible app.`","Cyclists think in miles per hour. Runners think in minutes per mile. That single difference forced Strava to ^hire actual runners into the company` and rebuild the running experience from the ground up.","The backlash from existing cyclists was real and loud. ^'The cyclists went crazy. They just felt so betrayed and angry that you had this running app too. Why are you ruining Strava? It was perfect before.'` It only resolved once cyclists realized their own friends who ran could now join the same feed.","The expansion also forced a real demographic shift. As a cycling only product, Strava's user base was roughly 90% male. The moment running launched, a sport with more women than men globally, that ratio shifted close to 50 50 almost immediately.","Features built around a heavily competitive, male skewed lens had to be rethought, including something as simple as a toggle to hide your pace from others, which took far longer to ship than it should have."]},{title:"Self Funded Until They Were Sure",beats:["#Strava was self funded for its first couple of years. ^'We self funded this thing for the first couple years, we did.'`","The reasoning was explicit: ^'We'd been part of plenty of examples of companies as board members or investors where you come in early not knowing where it's gonna go. Having other people's money changes the expectations around what success means.'`","They were genuinely comfortable with a small outcome. ^'We could see this as being an enterprise that was much smaller in scope and scale than it is today, and we would have been happy individually.'`","^'So we didn't want to have other people along for the ride until we were sure what this was going to be.'`","The first outside funding round closed at the end of 2010, once they had roughly ^5,000 users`, and the real trigger was watching the mobile app's growth curve break open through the App Store. Only once that growth was visible did they decide to ^'go find like minded investors who shared our long run vision.'`","On choosing those investors, Mark's stated rule: track record matters more than whether an investor used to be a founder. A proven track record buys patience, both because it gives the investor internal credibility with their own partners, and because they've personally survived hard moments before.","He runs direct reference calls with that investor's previous founders, asking one specific question: ^when things got hard, were they on your side or against you?`"]},{title:"We Tried Almost Everything, and Came Back to One Customer",beats:["#Over ten years, Strava tried nearly every revenue model available: subscription, e commerce, advertising in the feed, and a B2B data product called ^Strava Metro`, sold to city planners and local governments, about 300 partners, to help cities understand how cyclists, pedestrians, and runners actually move through their streets.","Between 2017 and 2019, under an outside CEO, the company spread itself thin testing several of these models simultaneously, including in feed ads for the first time in Strava's history. Mark's own retrospective: ^'We just bit off more than we could chew. We were spread really, really thin as a company.'`","The named risk they identify directly from this period, citing Homer: ^'If you serve too many masters, you'll soon suffer.'` The danger of products like Strava Metro: once a non end user starts paying you, their incentives can quietly start pulling product decisions away from the actual customer.","Their fixed rule going forward: ^'Plant a stake in the ground, our customer is the athlete. That is who we're there to take care of. Anybody else we work with, they are our partners.'`","By 2019 the company was roughly 150 to 200 people, not profitable, and unable to raise more capital. On ^November 1, 2019`, they laid off about 32 people.","On ^November 2`, Michael's second day back as CEO, he stood up and committed the company to one customer and one bet: a subscription good enough that people would pay for it.","The hard part wasn't the strategy. It was that the layoffs landed before most of the team had any real relationship with him as a leader, so the months that followed were spent almost obsessively over scrutinizing every internal message just to rebuild basic trust before talking about vision at all."]},{title:"Talking to People, Not Just to Each Other",beats:["#The first real engineering hires weren't recruited cold. ^Mark Shaw and Chris Donahue`, the two ex Kana employees who'd called in sick to ride their bikes during the original ten person test, became Strava's first developers. Mark's own description: ^'We went fishing, we reeled them in.'`","Get the right people using your early, janky product as community members first, then convert the best of them into hires.","Product direction was deliberately kept outside the founders' own heads. ^'The majority of our direction comes from actually talking to our community and researching what their needs are, as opposed to just talking to ourselves.'`","They built a real research team for this, specifically to avoid a team of passionate athletes designing the product only around their own taste.","They kept, and still keep, a literal, named ^no list.` A former Olympic sailing medalist personally and repeatedly emailed Mark asking Strava to build proper sailing support.","Mark's answer, on the record: ^'I love this guy to death, but there is no way that we can justify taking product resources and engineering to go deep in a sport like that, not right now.'`","Writing the no down, with the reason, stopped the same request from being relitigated every time someone asked.","A specific data finding changed their content strategy entirely. They had assumed featuring elite athletes would be the strongest motivator for casual users to stay active. The data didn't support it.","What actually correlated with people staying active was being connected to a small number of people they personally cared about, not network size, and the outcome that mattered to people wasn't getting faster, it was becoming more consistent. They shifted investment toward everyday user transformation stories instead of leaning on pro athlete content.","Culture wasn't codified until roughly four or five years in, around 50 to 60 employees. That's when they named the ^Strava ABCs`, Authenticity, Balance, Camaraderie, Commitment, Craftsmanship, and minted an actual physical coin, Strava on one side, the five values on the other, under the internal phrase ^carry the coin.`","Strava deliberately never built a traditional sales team. With no one to sell to outside the product itself, sales and marketing had to happen inside the app experience. At points, product and engineering made up ^two thirds to 80% of the entire company.`"]},{title:"Word of Mouth Is Slow, Until It's Fast",beats:["#Growth was never primarily paid. ^'As simple as it sounds, our greatest source of growth are our members. It's been like that from day one.'` Even at scale, roughly 96% of Strava's growth remained organic word of mouth.","The actual numbers, stated honestly rather than as an overnight success story: it took ^eight years` to reach the first billion activities uploaded. The second billion took ^18 months.` The third billion took ^13 months.` ^'Word of mouth is slow until it's fast.'`","International growth happened to them before they chose it. Cyclists and runners don't respect borders. Mark describes his own Strava feed splitting naturally into a local group on his actual roads, and an equally large international group exchanging kudos across the UK, Brazil, Germany, and beyond.","Only after noticing this did the company get proactive about localization, and in some markets, like Brazil, that meant understanding genuine cultural differences in how sport is practiced, not just translating button labels.","The metric they say they're proudest of: for every ^one minute` someone spends inside the Strava app, members spend an average of ^fifty minutes` actually working out. ^'We don't need your eyeballs in the app all the time. We just want to know that we're a part of that experience.'`","=This story was assembled by <b>Andres Vanryckeghem</b>, founder of <b>Athlete Founders</b>. He analyses athlete entrepreneurs every day to help other athletes see the possibilities of their own projects, and to make their first steps very concrete based on all these learnings."]},]},o=["The Problem","First Idea","Coming Back","The Spark","The First Test","The Niche","Going Grassroots","Single Player Mode","Charging Early","The Mobile Rebuild","Expanding to Running","Investors, Later","Money Experiments","Product & Team","Going Global"],a=0,i=0,r="intro",s=[],d={},l=0;t.innerHTML='<style>@import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap\');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}:host{display:block;width:100%;--a:rgba(255,255,255,.05);--b:rgba(255,255,255,.1);--c:rgba(255,255,255,.3);--d:rgba(255,255,255,.025);--e:rgba(255,255,255,.08);--f:rgba(255,255,255,.25);--g:rgba(255,255,255,.07);--h:rgba(255,255,255,.5);--i:rgba(255,255,255,.75);--j:rgba(255,255,255,.45);--k:rgba(255,255,255,.04);--l:rgba(255,255,255,.12);--m:rgba(255,255,255,.09);--n:rgba(255,255,255,.4);--o:rgba(255,255,255,.15);--p:rgba(255,255,255,.7);--q:rgba(255,255,255,.2);--A:rgba(252,76,2,.6);--B:rgba(252,76,2,.3);--C:rgba(252,76,2,.4);--D:rgba(252,76,2,.5);--E:rgba(252,76,2,.12);--F:rgba(252,76,2,.06);--G:rgba(252,76,2,.7);--H:rgba(252,76,2,.2)}#shell{display:flex;width:100%;max-width:100%;height:100vh;overflow:hidden;font-family:\'Inter\',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#0d1b1e;color:#f0ede8}\n\n@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}\n@keyframes eq{0%,100%{height:20%}50%{height:90%}}\naudio{width:100%;margin-bottom:1rem}\n\n\n#nb{width:260px;flex-shrink:0;background:#111a12;display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--a);position:relative}.nb-mg{position:absolute;left:32px;top:0;bottom:0;width:1px;background:var(--E);pointer-events:none;z-index:1}.nb-sp{position:absolute;left:0;top:0;bottom:0;width:32px;display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:17px;z-index:2;pointer-events:none}.nb-ring{width:10px;height:10px;border-radius:50%;background:#0d1b1e;border:1.5px solid var(--m);flex-shrink:0}.nb-hd{padding:20px 14px 14px 44px;border-bottom:1px solid var(--a);flex-shrink:0;position:relative;z-index:3}.nb-ey{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--D);margin-bottom:5px}.nb-nm{font-size:.85rem;font-weight:600;color:var(--i);line-height:1.35;margin-bottom:10px}.nb-br{display:flex;align-items:center;gap:7px}.nb-bt{flex:1;height:2px;background:var(--g);border-radius:2px;overflow:hidden}.nb-bf{height:100%;background:#FC4C02;border-radius:2px;transition:width .6s cubic-bezier(.22,1,.36,1);width:0%}.nb-bl{font-size:9px;font-weight:600;color:rgba(255,255,255,.18);white-space:nowrap}.nb-bl b{color:var(--A)}.nb-cw{padding:10px 14px 12px 44px;flex-shrink:0;position:relative;z-index:3;display:flex;gap:6px}.nb-cw button{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 6px;border-radius:6px;font-family:\'Inter\',sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s}#cb{background:rgba(252,76,2,.1);border:1px solid var(--B);color:#FC4C02}#cb:hover:not(:disabled){background:rgba(252,76,2,.18)}#cb:disabled{opacity:.2;cursor:not-allowed;color:var(--c);background:transparent;border-color:var(--e)}#cb.ok{border-color:var(--A);background:var(--E)}.nb-sl{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:3}.nb-vp{flex:1;position:relative;overflow:hidden;background-image:repeating-linear-gradient(transparent,transparent 28px,var(--d) 28px,var(--d) 29px);background-position:0 6px}.nb-sd{position:absolute;inset:0;padding:18px 14px 12px 44px;display:flex;flex-direction:column;justify-content:center;transition:opacity .28s ease,transform .28s ease}.nb-sd.or{opacity:0;transform:translateX(16px);pointer-events:none}.nb-sd.ol{opacity:0;transform:translateX(-16px);pointer-events:none}.nb-em{font-size:.82rem;font-weight:400;color:var(--b);line-height:1.9}.nb-nn{font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(252,76,2,.35);margin-bottom:6px}.nb-nt{font-size:.88rem;font-weight:400;line-height:1.65;color:rgba(255,255,255,.62);font-style:italic}.nb-nr{display:flex;align-items:center;justify-content:space-between;padding:7px 14px 10px 44px;flex-shrink:0}.nb-a{background:none;border:none;color:var(--q);font-size:15px;cursor:pointer;padding:3px 5px;transition:color .15s;font-family:\'Inter\',sans-serif}.nb-a:hover:not(:disabled){color:var(--G)}.nb-a:disabled{opacity:.12;cursor:default}.nb-ds{display:flex;gap:4px;align-items:center}.nd{width:5px;height:5px;border-radius:50%;background:var(--b);transition:all .25s;cursor:pointer}.nd.on{background:#FC4C02;width:13px;border-radius:3px}.nd.was{background:var(--B)}@keyframes nbp{0%{box-shadow:inset 0 0 0 1px var(--D)}100%{box-shadow:inset 0 0 0 1px rgba(252,76,2,0)}}#nb.pulse{animation:nbp .7s ease}#story{flex:1;display:flex;flex-direction:column;min-width:0;background:#0d1b1e}#chnav{display:flex;align-items:center;gap:8px;padding:16px 24px 14px;flex-shrink:0;border-bottom:1px solid var(--a)}.ca{background:none;border:none;color:var(--f);font-size:16px;cursor:pointer;padding:4px 2px;transition:color .15s;font-family:\'Inter\',sans-serif}.ca:hover:not(:disabled){color:#FC4C02}.ca:disabled{opacity:.15;cursor:default}#chi{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}#chit{display:flex;align-items:baseline;justify-content:space-between;gap:8px}#chn{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--A);flex-shrink:0}#chs{font-size:11px;font-weight:500;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:right}#chtr{height:2px;background:var(--g);border-radius:2px;overflow:hidden}#chfi{height:100%;background:#FC4C02;border-radius:2px;transition:width .4s ease;width:0%}#cpw{position:relative}#cpb{background:var(--a);border:1px solid var(--b);border-radius:6px;color:var(--n);font-size:10px;font-weight:600;font-family:\'Inter\',sans-serif;padding:5px 9px;cursor:pointer;transition:all .15s}#cpb:hover{border-color:var(--B);color:#FC4C02;background:rgba(252,76,2,.05)}#cdd{display:none;position:fixed;background:#141f16;border:1px solid var(--l);border-radius:10px;min-width:240px;max-height:360px;overflow-y:scroll;overscroll-behavior:contain;z-index:9999;box-shadow:0 16px 48px rgba(0,0,0,.7);scrollbar-width:thin;scrollbar-color:var(--B) transparent}#cdd::-webkit-scrollbar{width:4px}#cdd::-webkit-scrollbar-track{background:transparent}#cdd::-webkit-scrollbar-thumb{background:var(--B);border-radius:4px}#cdd.open{display:block}.co{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--k)}.co:last-child{border-bottom:none}.co:hover{background:var(--k)}.co.act{background:var(--F)}.con{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--D);flex-shrink:0;width:20px}.co.act .con{color:#FC4C02}.cot{font-size:11px;font-weight:400;color:var(--j)}.co.act .cot{color:rgba(255,255,255,.8);font-weight:500}.cod{margin-left:auto;font-size:9px;color:var(--C)}.screen{display:none}#s-intro.active,#s-ch.active,#s-read.active{display:flex;flex:1;flex-direction:column;min-height:0;animation:fup .4s ease both}@keyframes fup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}#s-intro{align-items:center;justify-content:center;text-align:center;padding:2rem 3rem}.sit{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--f);margin-bottom:1.2rem}\n  .sit strong{font-weight:800}.siti{font-size:clamp(4rem,10vw,7rem);font-weight:900;color:#FC4C02;letter-spacing:-.03em;line-height:1;margin-bottom:.75rem}.sisu{font-size:1rem;font-weight:400;line-height:1.6;color:var(--c);max-width:400px;margin:0 auto 2.5rem}#s-ch{align-items:center;justify-content:center;text-align:center;padding:2rem 3rem}.scn{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--c);margin-bottom:1.25rem}.sct{font-size:clamp(2rem,5vw,3.5rem);font-weight:900;color:#FC4C02;letter-spacing:-.01em;line-height:1.05;margin-bottom:2.5rem;max-width:600px}.cta{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:30px;background:var(--g);border:1px solid var(--o);color:var(--p);font-family:\'Inter\',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s}.cta:hover{background:var(--l);border-color:var(--c);color:#fff}#s-read{justify-content:center}#rb{flex:1;display:flex;flex-direction:column;justify-content:center;padding:3rem 12% 2rem;overflow-y:auto;overflow-x:hidden;min-height:0}.rt{font-size:clamp(1.1rem,2vw,1.5rem);font-weight:300;line-height:1.85;color:rgba(255,255,255,.85);letter-spacing:.01em}.rt b{color:#fff;font-weight:600}.rt p{margin-bottom:1em}.rt p:last-child{margin-bottom:0}.rt.end{font-style:italic;font-size:clamp(1rem,1.8vw,1.3rem);color:var(--c)}.rt.credit{text-align:center;font-size:clamp(1rem,1.7vw,1.25rem);font-weight:300;color:rgba(255,255,255,.85);line-height:1.8;max-width:540px;margin:0 auto}.rt.credit b{color:#FC4C02;font-weight:600}#rn{position:relative;flex-shrink:0;display:flex;justify-content:center;align-items:center;padding:0 0 22px}.np{display:inline-flex;align-items:center;background:rgba(255,255,255,.06);border:1px solid var(--b);border-radius:40px;overflow:hidden}.nb2{padding:12px 26px;font-size:13px;font-weight:500;font-family:\'Inter\',sans-serif;background:transparent;border:none;color:var(--h);cursor:pointer;transition:all .18s;letter-spacing:.04em}.nb2:hover:not(:disabled){color:#fff;background:var(--g)}.nb2:disabled{opacity:.2;cursor:not-allowed}.nd2{width:1px;background:var(--e);align-self:stretch}.nc{padding:12px 20px;font-size:12px;color:var(--q);letter-spacing:.04em;user-select:none}#nb{display:none!important}#story{flex:1!important}@media(max-width:600px){#shell{flex-direction:column;height:auto;min-height:100vh;overflow:visible}#chnav{padding:12px 14px 10px}#rb{overflow-y:visible}#s-ch.active,#s-read.active{min-height:auto}}</style><div id="shell"><div id="nb"><div class="nb-mg"></div><div class="nb-sp" id="rings"></div><div class="nb-hd"><div class="nb-ey">Field Notes</div><div class="nb-nm">How to build a hardware product with no engineering skills</div><div class="nb-br"><div class="nb-bt"><div class="nb-bf" id="nbf"></div></div><div class="nb-bl"><b id="nbc">0</b>/<span id="nbt">0</span></div></div></div><div class="nb-cw"><button id="cb" disabled><span id="ci">\u2398</span><span id="cl">Copy learnings</span></button></div><div class="nb-sl"><div class="nb-vp" id="nvp"><div class="nb-sd" id="nes"><div class="nb-em">Read the story<br>to fill this<br>notebook...</div></div></div><div class="nb-nr"><button class="nb-a" id="np">\u2039</button><div class="nb-ds" id="nds"></div><button class="nb-a" id="nn">\u203a</button></div></div></div><div id="story"><div id="chnav"><button class="ca" id="cpp">\u2039</button><div id="chi"><div id="chit"><span id="chn"></span><span id="chs"></span></div><div id="chtr"><div id="chfi"></div></div></div><div id="cpw"><button id="cpb">See all chapters \u25be</button><div id="cdd"></div></div><button class="ca" id="cpn">\u203a</button></div><div id="s-intro" class="screen"><p class="sit"><strong>Playbook:</strong> how to launch a sports app</p><div class="siti" id="sit"></div><p class="sisu" id="sis"></p><button class="cta" id="sib">Start reading \u2192</button></div><div id="s-ch" class="screen"><p class="scn" id="scn"></p><div class="sct" id="sct"></div><button class="cta" id="scb">Begin \u2192</button></div><div id="s-read" class="screen"><div id="rb"></div><div id="rn"><div class="np"><button class="nb2" id="bk">Back</button><div class="nd2"></div><div class="nc" id="nc">1/5</div><div class="nd2"></div><button class="nb2" id="nx">Next</button></div></div></div></div></div>';for(var h=b("rings"),c=0;c<22;c++){var p=document.createElement("div");p.className="nb-ring",h.appendChild(p)}b("sib").addEventListener("click",function(){a=0,i=0,"reading"===r?(r="reading",H("s-read"),O()):(r="chapter",b("scn").textContent="Chapter 1 of "+n.chapters.length,b("sct").textContent=n.chapters[0].title,H("s-ch"),W())}),b("scb").addEventListener("click",function(){r="reading",H("s-read"),O()}),b("nx").addEventListener("click",function(){var e=n.chapters[a].beats,t=v(e,i);if(-1!==t){var o=T(a,i=t);i>0&&(o=T(a,i-1)||o),y(o),O()}else{for(var s=!1,d=0;d<e.length;d++)T(a,d)&&(s=!0);s&&y(!0),a<n.chapters.length-1&&(a+=1,i=0,r="chapter",b("scn").textContent="Chapter "+(a+1)+" of "+n.chapters.length,b("sct").textContent=n.chapters[a].title,H("s-ch"),W())}}),b("bk").addEventListener("click",function(){var e=w(n.chapters[a].beats,i);if(-1!==e)i=e,O();else if(a>0){a-=1;for(var t=n.chapters[a].beats,o=-1,s=0;s<t.length;s++)"@"!==t[s][0]&&(o=s);i=o>=0?o:0,r="reading",H("s-read"),O()}}),b("np").addEventListener("click",function(){k(l-1)}),b("nn").addEventListener("click",function(){k(l+1)}),b("cpp").addEventListener("click",function(){a>0&&(a-=1,i=0,r="reading",H("s-read"),O())}),b("cpn").addEventListener("click",function(){a<n.chapters.length-1&&(a+=1,i=0,r="reading",H("s-read"),O())}),b("cpb").addEventListener("click",function(e){e.stopPropagation();var t=b("cdd");if(t.classList.contains("open"))t.classList.remove("open");else{var n=b("cpb").getBoundingClientRect();t.style.top=n.bottom+6+"px",t.style.right=window.innerWidth-n.right+"px",t.classList.add("open");var o=t.querySelector(".co.act");o&&setTimeout(function(){o.scrollIntoView({block:"nearest"})},50)}}),t.addEventListener("click",function(){b("cdd").classList.remove("open")}),document.addEventListener("click",function(){b("cdd").classList.remove("open")}),b("cdd").addEventListener("wheel",function(e){var t=this,n=0===t.scrollTop,o=t.scrollTop+t.clientHeight>=t.scrollHeight;(n&&e.deltaY<0||o&&e.deltaY>0)&&e.preventDefault(),e.stopPropagation()},{passive:!1}),b("cb").addEventListener("click",function(){if(s.length){var e=s.map(function(e){return"\u2022 "+e.text.replace(/[\^\x60]/g,"")}).join("\n"),t=b("cb"),n=b("ci"),o=b("cl");navigator.clipboard.writeText(e).then(a).catch(function(){var t=document.createElement("textarea");t.value=e,t.style.cssText="position:fixed;opacity:0",document.body.appendChild(t),t.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(t),a()})}function a(){t.classList.add("ok"),n.textContent="\u2713",o.textContent="Copied!",setTimeout(function(){t.classList.remove("ok"),n.textContent="\u2398",o.textContent="Copy"},2e3)}}),document.addEventListener("keydown",function(e){"reading"===r&&("ArrowRight"!==e.key&&" "!==e.key||(e.preventDefault(),b("nx").click()),"ArrowLeft"===e.key&&(e.preventDefault(),b("bk").click()))}),b("nbt").textContent=g(),y(!1),r="intro",b("sit").textContent=n.title,b("sis").textContent=n.tagline,H("s-intro"),W()}}function u(e){return e.replace(/^[@#+=]/,"")}function b(e){return t.getElementById(e)}function g(){var e=0;return n.chapters.forEach(function(t){t.beats.forEach(function(t){"@"===t[0]&&e++})}),e}function f(e){return e.filter(function(e){return"@"!==e[0]})}function m(e,t){for(var n=0,o=0;o<=t;o++)"@"!==e[o][0]&&n++;return n}function v(e,t){for(var n=t+1;n<e.length&&"@"===e[n][0];)n++;return n<e.length?n:-1}function w(e,t){for(var n=t-1;n>=0&&"@"===e[n][0];)n--;return n>=0?n:-1}function y(e){var t=g(),n=s.length;if(b("nbt").textContent=t,b("nbc").textContent=n,b("nbf").style.width=(t?Math.round(n/t*100):0)+"%",b("cb").disabled=0===n,e&&n>0&&(l=n-1),x(!!e),e){var o=b("nb");o.classList.remove("pulse"),o.offsetWidth,o.classList.add("pulse")}}function x(e){var n=s.length;b("nes").style.display=0===n?"flex":"none";var o=b("nvp").querySelector(".nb-cs");if(o&&o.remove(),n>0){var a=s[l],i=document.createElement("div");i.className="nb-sd nb-cs"+(e?" or":""),i.innerHTML='<div class="nb-nn">Note '+(l+1)+" of "+n+'</div><div class="nb-nt">'+a.text.replace(/\^/g,"<b>").replace(/\x60/g,"</b>")+"</div>",b("nvp").appendChild(i),e&&requestAnimationFrame(function(){requestAnimationFrame(function(){i.classList.remove("or")})})}for(var r="",d=0;d<n;d++)r+='<div class="nd'+(d===l?" on":d<l?" was":"")+'" data-i="'+d+'"></div>';b("nds").innerHTML=r,t.querySelectorAll(".nd").forEach(function(e){e.addEventListener("click",function(){k(parseInt(this.getAttribute("data-i")))})}),b("np").disabled=0===l||0===n,b("nn").disabled=l>=n-1||0===n}function k(e){if(!(e<0||e>=s.length)){var t=e>l,n=b("nvp").querySelector(".nb-cs");n&&n.classList.add(t?"ol":"or"),l=e,setTimeout(function(){x(!0)},80)}}function T(e,t){var o=e+"-"+t;if(d[o])return!1;var a=n.chapters[e].beats[t];return"@"===a[0]&&(d[o]=!0,s.push({chIdx:e,text:u(a)}),!0)}function W(){if(window.__lastCh!==a){window.__lastCh=a;try{window.track&&window.track('read_chapter_viewed',{chapter_index:a+1,chapter_title:n.chapters[a].title});}catch(_){}}var e=n.chapters[a].beats,s=f(e),d=m(e,i),l="reading"===r&&s.length?Math.round(d/s.length*100):0;b("chn").textContent="Chapter "+(a+1)+" of "+n.chapters.length,b("chs").textContent=o[a]||n.chapters[a].title,b("chfi").style.width=l+"%",b("cpp").disabled=0===a,b("cpn").disabled=a===n.chapters.length-1;var h="";n.chapters.forEach(function(e,t){h+='<div class="co'+(t===a?" act":"")+'" data-ci="'+t+'"><span class="con">'+(t+1)+'</span><span class="cot">'+(o[t]||e.title)+"</span>"+(t<a?'<span class="cod">\u2713</span>':"")+"</div>"}),b("cdd").innerHTML=h,t.querySelectorAll(".co").forEach(function(e){e.addEventListener("click",function(){var e=parseInt(this.getAttribute("data-ci"));b("cdd").classList.remove("open"),a=e,i=0,r="chapter",b("scn").textContent="Chapter "+(e+1)+" of "+n.chapters.length,b("sct").textContent=n.chapters[e].title,H("s-ch"),W()})})}function H(e){["s-intro","s-ch","s-read"].forEach(function(t){b(t).className="screen"+(t===e?" active":"")}),r="s-intro"===e?"intro":"s-ch"===e?"chapter":"reading"}function O(){var e=n.chapters[a].beats,t=e[i],o="",r="+"===t[0],s="="===t[0],d=u(t).split("\n\n");o+='<div class="rt'+(r?" end":"")+(s?" credit":"")+'">',d.forEach(function(e){o+="<p>"+e.replace(/\^/g,"<b>").replace(/\x60/g,"</b>")+"</p>"}),o+="</div>",b("rb").innerHTML=o;var l=w(e,i),h=v(e,i),c=-1===l&&0===a,p=-1===h,g=a===n.chapters.length-1;b("bk").disabled=c;var y=b("nx");y.disabled=p&&g,y.textContent=p&&!g?"Next chapter":"Next";var x=f(e);b("nc").textContent=m(e,i)+" / "+x.length;var pct=x.length?Math.round(m(e,i)/x.length*100):0;window.__readMilestones=window.__readMilestones||{};var rmKey=a+"-"+pct;[25,50,75,100].forEach(function(ms){if(pct>=ms){var k=a+"-"+ms;if(!window.__readMilestones[k]){window.__readMilestones[k]=!0;window.track&&window.track('read_progress',{chapter_index:a+1,percent:ms});}}});W()}}();window.__fswStart=function(){};
+</script>
+</body>
+</html>
