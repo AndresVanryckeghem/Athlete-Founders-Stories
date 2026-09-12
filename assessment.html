@@ -5,13 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Athlete Founders — Career Assessment</title>
 
-<!-- ===== CONFIG: paste your Anthropic API key between the quotes on the next line. Leave empty to run without AI. ===== -->
-<script>window.AF_API_KEY = "curl https://api.anthropic.com/v1/messages \
-  --header "x-api-key: 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" \
-  --header "anthropic-version: 2023-06-01" \
-  --header "content-type: application/json" \
-  --data '{"model": "claude-sonnet-4-6", "max_tokens": 1024,
-    "messages": [{"role": "user", "content": "Hello, world"}]}'";</script>
+<!-- ===== CONFIG: paste your Cloudflare Worker URL between the quotes (see af-proxy/SETUP.md). Never put an API key in this file. ===== -->
+<script>window.AF_PROXY_URL = "";</script>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600&display=swap">
 <style>html,body,#root{margin:0;min-height:100%}body{font-family:'Archivo',-apple-system,sans-serif}</style>
@@ -351,20 +346,18 @@ const S = {
   choice: { display: "block", width: "100%", textAlign: "left", background: "#fff", border: "1px solid #ddd", padding: "18px 20px", cursor: "pointer", fontFamily: font, marginTop: 14, boxSizing: "border-box" },
   err: { color: "#c0392b", fontSize: 14, marginTop: 16 }
 };
-let API_KEY = typeof window !== "undefined" && window.AF_API_KEY ? String(window.AF_API_KEY).trim() : "";
+const PROXY_URL = typeof window !== "undefined" && window.AF_PROXY_URL ? String(window.AF_PROXY_URL).replace(/\/$/, "") : "";
+let ACCESS_CODE_USED = "";
+const inClaude = () => typeof window !== "undefined" && /claude\.ai|anthropic|claudeusercontent/.test(window.location.hostname);
 async function callClaude(prompt, maxTokens = 900) {
-  if (!API_KEY && typeof window !== "undefined" && !/claude\.ai|anthropic|claudeusercontent/.test(window.location.hostname)) throw new Error("No API key");
+  if (!PROXY_URL && !inClaude()) throw new Error("No proxy configured");
   let lastErr;
   for (const model of MODELS) {
-    const headers = { "Content-Type": "application/json" };
-    if (API_KEY) {
-      headers["x-api-key"] = API_KEY;
-      headers["anthropic-version"] = "2023-06-01";
-      headers["anthropic-dangerous-direct-browser-access"] = "true";
-    }
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 25e3);
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const headers = { "Content-Type": "application/json" };
+    if (PROXY_URL) headers["X-Access-Code"] = ACCESS_CODE_USED;
+    const res = await fetch(PROXY_URL ? PROXY_URL : "https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers,
       signal: ctrl.signal,
@@ -516,6 +509,7 @@ function AthleteFounders() {
   };
   const login = () => {
     if (ACCESS_CODES.map((c) => c.toLowerCase()).includes(code.trim().toLowerCase())) {
+      ACCESS_CODE_USED = code.trim();
       setError("");
       setScreen("q");
     } else setError("That code isn't valid.");
@@ -583,19 +577,21 @@ Respond ONLY with JSON: {"picks":[{"segment":"exact name from the list","reason"
       for (const x of groupByName(gRank[gi]).segments.map((y) => y.name).sort((a, b) => storiesFor(b).length - storiesFor(a).length)) if (!fromChoices.includes(x)) fromChoices.push(x);
       gi++;
     }
-    const fromAnswers = storyPicks.map((x) => x.segment);
-    const both = fromChoices.filter((x) => fromAnswers.includes(x));
-    const fallback = () => {
-      const out2 = [];
-      for (const x of both) if (out2.length < 3) out2.push({ segment: x, basis: "both" });
-      for (const x of fromChoices) if (out2.length < 2 && !out2.find((o) => o.segment === x)) out2.push({ segment: x, basis: "choices" });
-      for (const x of fromAnswers) if (out2.length < 3 && !out2.find((o) => o.segment === x)) out2.push({ segment: x, basis: "answers" });
-      for (const x of fromChoices) if (out2.length < 3 && !out2.find((o) => o.segment === x)) out2.push({ segment: x, basis: "choices" });
-      return out2.map((o) => {
-        var _a2;
-        return { ...o, why: o.basis === "both" ? "Your answers and your head-to-head choices both point here." : o.basis === "answers" ? ((_a2 = storyPicks.find((x) => x.segment === o.segment)) == null ? void 0 : _a2.reason) || "Your answers pointed here." : "This came out on top of your head-to-head choices." };
-      });
-    };
+    const top3 = fromChoices.slice(0, 3);
+    const fromAnswers = storyPicks.map((x) => x.segment).filter((x) => !top3.includes(x));
+    const answerPicks = fromAnswers.slice(0, 2);
+    const fillers = fromChoices.slice(3).filter((x) => !answerPicks.includes(x));
+    while (answerPicks.length < 2 && fillers.length) answerPicks.push(fillers.shift());
+    const picks = [...top3, ...answerPicks];
+    const basisOf = (seg) => top3.includes(seg) ? "choices" : fromAnswers.includes(seg) ? "answers" : "choices";
+    const fallback = () => picks.map((seg) => {
+      var _a2;
+      return {
+        segment: seg,
+        basis: basisOf(seg),
+        why: basisOf(seg) === "answers" ? ((_a2 = storyPicks.find((x) => x.segment === seg)) == null ? void 0 : _a2.reason) || "Your answers pointed here." : "This came out on top of your head-to-head choices."
+      };
+    });
     let out = null;
     try {
       const t = await callClaude(
@@ -603,24 +599,28 @@ Respond ONLY with JSON: {"picks":[{"segment":"exact name from the list","reason"
 ` + answers.map((x, i) => `${i + 1}. ${QUESTIONS[i]}
    Answer: ${x}`).join("\n") + `
 
-SIGNAL A \u2014 what their answers point to (segments matched from their stories, with reasons):
-` + (storyPicks.length ? storyPicks.map((x) => `- ${x.segment}: ${x.reason}`).join("\n") : "- (none available)") + `
+They then compared cycling business groups head-to-head and preferred "${gRank[0]}" (runner-up: "${gRank[1]}"), then compared the segments inside it. Ranking, strongest first: ${sRank.join(" > ")}.
 
-SIGNAL B \u2014 their head-to-head choices. They preferred the group "${gRank[0]}" (runner-up: "${gRank[1]}"). Segment ranking inside it, strongest first: ${sRank.join(" > ")}.
+The recommendation is a top 5, already decided:
+Picks 1-3 (from the head-to-head choices): ${top3.join(" | ")}
+Picks 4-5 (from what their answers pointed to): ${answerPicks.join(" | ")}
+` + (storyPicks.length ? `
+Reasons the answers pointed to certain segments:
+` + storyPicks.map((x) => `- ${x.segment}: ${x.reason}`).join("\n") : "") + `
 
 SEGMENT DETAILS (name :: description)
-` + [.../* @__PURE__ */ new Set([...fromChoices, ...fromAnswers])].map((x) => {
+` + picks.map((x) => {
           var _a2;
           return `${x} :: ${(_a2 = segMeta(x)) == null ? void 0 : _a2.desc}`;
         }).join("\n") + `
 
-Recommend exactly 3 segments. Rules: at least 2 must come from Signal B's list (${fromChoices.slice(0, 4).join(", ")}); the remaining slot may go to a Signal A segment if their answers make a strong case, even if it sits in another group. Rank them by overall fit. For each pick set "basis" to "both" if it appears in both signals, "choices" if it comes from Signal B only, or "answers" if from Signal A only. Write each "why" directly to the athlete ("you"), 2-3 sentences, referencing their actual answers and, where relevant, what they chose head-to-head \u2014 warm, specific, no jargon.
-Respond ONLY with JSON: {"top3":[{"segment":"exact name","basis":"both|choices|answers","why":"..."}]}`,
-        1100
+For each of the 5 picks, in the exact order given, write a "why" directly to the athlete ("you"), 2-3 sentences. For picks 1-3, connect the segment to what they chose head-to-head AND to something specific they wrote in their answers. For picks 4-5, explain concretely which answers pointed here and why it fits them. Warm, specific, no jargon. Keep segment names EXACTLY as given.
+Respond ONLY with JSON: {"top5":[{"segment":"exact name","why":"..."}]}`,
+        1400
       );
-      const v = (parseJson(t).top3 || []).filter((r) => segMeta(r.segment) && r.why && ["both", "choices", "answers"].includes(r.basis));
-      const uniq = [...new Map(v.map((r) => [r.segment, r])).values()];
-      if (uniq.length === 3 && uniq.filter((r) => fromChoices.includes(r.segment)).length >= 2) out = uniq;
+      const v = (parseJson(t).top5 || []).filter((r) => picks.includes(r.segment) && r.why);
+      const byName = Object.fromEntries(v.map((r) => [r.segment, r.why]));
+      if (picks.every((p) => byName[p])) out = picks.map((seg) => ({ segment: seg, basis: basisOf(seg), why: byName[seg] }));
     } catch (e) {
     }
     if (!out) out = fallback();
@@ -701,15 +701,15 @@ Respond ONLY with JSON: {"top3":[{"segment":"exact name","basis":"both|choices|a
   if (screen === "analyzing")
     return frame(/* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.eyebrow }, "One moment"), /* @__PURE__ */ React.createElement("h1", { style: S.q }, "Matching your stories with your choices\u2026"), /* @__PURE__ */ React.createElement("p", { style: S.sub }, "Turning your answers and your head-to-head ranking into a recommendation.")));
   if (screen === "ranking" && rec)
-    return frame(/* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.eyebrow }, "Step 3 \u2014 Your recommendation \xB7 ", groupRanking[0]), /* @__PURE__ */ React.createElement("h1", { style: S.q }, "The segments that fit you best."), rec.map((r, i) => {
-      var _a2, _b2;
+    return frame(/* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.eyebrow }, "Step 3 \u2014 Your top 5 \xB7 ", groupRanking[0]), /* @__PURE__ */ React.createElement("h1", { style: S.q }, "The segments that fit you best."), rec.map((r, i) => {
+      var _a2;
       const m = segMeta(r.segment);
       const n = storiesFor(r.segment).length;
-      return /* @__PURE__ */ React.createElement("div", { key: r.segment, style: { borderTop: i ? "1px solid #eee" : "none", paddingTop: i ? 16 : 8, marginTop: 16 } }, /* @__PURE__ */ React.createElement("h2", { style: { ...S.q, fontSize: i === 0 ? 23 : 18 } }, i + 1, ". ", r.segment, i === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, letterSpacing: "0.14em", color: "#999", marginLeft: 8 } }, "BEST FIT")), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 12.5, color: "#999" } }, r.basis === "both" ? "Backed by your answers and your choices" : r.basis === "answers" ? "Backed by your answers" : "Backed by your head-to-head choices", ((_a2 = segMeta(r.segment)) == null ? void 0 : _a2.group) !== groupRanking[0] ? ` \xB7 ${(_b2 = segMeta(r.segment)) == null ? void 0 : _b2.group}` : ""), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 6, fontSize: 13.5 } }, m == null ? void 0 : m.desc), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 6, color: "#111" } }, r.why), /* @__PURE__ */ React.createElement("button", { style: { ...S.btn, marginTop: 12, padding: "10px 18px", fontSize: 14 }, onClick: () => {
+      return /* @__PURE__ */ React.createElement("div", { key: r.segment, style: { borderTop: i ? "1px solid #eee" : "none", paddingTop: i ? 16 : 8, marginTop: 16 } }, i === 0 && /* @__PURE__ */ React.createElement("p", { style: { ...S.eyebrow, marginBottom: 10 } }, "From your head-to-head choices"), i === 3 && /* @__PURE__ */ React.createElement("p", { style: { ...S.eyebrow, marginBottom: 10 } }, "From your answers to the 10 questions"), /* @__PURE__ */ React.createElement("h2", { style: { ...S.q, fontSize: i === 0 ? 23 : 18 } }, i + 1, ". ", r.segment, i === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, letterSpacing: "0.14em", color: "#999", marginLeft: 8 } }, "BEST FIT")), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 12.5, color: "#999" } }, (_a2 = segMeta(r.segment)) == null ? void 0 : _a2.group), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 6, fontSize: 13.5 } }, m == null ? void 0 : m.desc), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 6, color: "#111" } }, r.why), /* @__PURE__ */ React.createElement("button", { style: { ...S.btn, marginTop: 12, padding: "10px 18px", fontSize: 14 }, onClick: () => {
         setOpen(r.segment);
         setScreen("segment");
       } }, n ? `See how ${n} founder${n > 1 ? "s" : ""} started here` : "See this segment"));
-    }), storyPicks.filter((x) => !rec.find((r) => r.segment === x.segment)).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid #eee", marginTop: 24, paddingTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, color: "#111", fontWeight: 600 } }, "What your answers alone pointed to"), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 13.5 } }, "Read before you made any choice. Not in your top 3, but worth a look."), storyPicks.filter((x) => !rec.find((r) => r.segment === x.segment)).map((x) => {
+    }), storyPicks.filter((x) => !rec.find((r) => r.segment === x.segment)).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid #eee", marginTop: 24, paddingTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, color: "#111", fontWeight: 600 } }, "Also worth a look from your answers"), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 13.5 } }, "Other segments your answers pointed to, read before you made any choice."), storyPicks.filter((x) => !rec.find((r) => r.segment === x.segment)).map((x) => {
       var _a2;
       return /* @__PURE__ */ React.createElement(
         "button",
@@ -726,7 +726,7 @@ Respond ONLY with JSON: {"top3":[{"segment":"exact name","basis":"both|choices|a
         /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 15, fontWeight: 600 } }, x.segment, " ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#999", fontSize: 12.5 } }, "\xB7 ", (_a2 = segMeta(x.segment)) == null ? void 0 : _a2.group)),
         /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 13.5, color: "#777", marginTop: 5, lineHeight: 1.45 } }, x.reason)
       );
-    })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid #eee", marginTop: 24, paddingTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, color: "#111", fontWeight: 600 } }, "4. Explore the rest"), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 13.5 } }, "Browse every group and segment, and the founder stories inside each."), /* @__PURE__ */ React.createElement("button", { style: { ...S.btn, marginTop: 12, padding: "10px 18px", fontSize: 14 }, onClick: () => setScreen("browse") }, "Browse all groups and segments")), restartBtn));
+    })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid #eee", marginTop: 24, paddingTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, color: "#111", fontWeight: 600 } }, "Explore the rest"), /* @__PURE__ */ React.createElement("p", { style: { ...S.sub, marginTop: 4, fontSize: 13.5 } }, "Browse every group and segment, and the founder stories inside each."), /* @__PURE__ */ React.createElement("button", { style: { ...S.btn, marginTop: 12, padding: "10px 18px", fontSize: 14 }, onClick: () => setScreen("browse") }, "Browse all groups and segments")), restartBtn));
   if (screen === "segment" && open)
     return frame(/* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.eyebrow }, "Founders \u2014 ", (_a = segMeta(open)) == null ? void 0 : _a.group), /* @__PURE__ */ React.createElement("h1", { style: S.q }, open), /* @__PURE__ */ React.createElement("p", { style: S.sub }, (_b = segMeta(open)) == null ? void 0 : _b.desc), storyList(open, "segment"), /* @__PURE__ */ React.createElement("button", { style: S.ghost, onClick: () => setScreen("ranking") }, "Back to your recommendation"), restartBtn));
   if (screen === "browse") {
