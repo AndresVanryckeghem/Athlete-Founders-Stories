@@ -28,7 +28,7 @@
   }
   var RECIPIENT_ID = getRecipientId();
 
-  var EXIT_EVENTS = { read_session_end:1, audio_session_end:1 }; // events fired as the page is closing — must use guaranteed delivery
+  var EXIT_EVENTS = { read_session_end:1 }; // events fired as the page is closing — must use guaranteed delivery
 
   window.track = function(eventName, params){
     var payload = Object.assign({ story_name: window.STORY_NAME, recipient_id: RECIPIENT_ID }, params || {});
@@ -104,65 +104,11 @@
   }
   .choice-card:hover .go{opacity:1;transform:translateY(0)}
   .choice-card .go span{animation:fsw-arrow 1s ease-in-out infinite}
-  .choice-or{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);align-self:center;padding:0 2px}
   @media(max-width:600px){
     .choice-row{flex-direction:column;flex-wrap:nowrap;width:100%;max-width:340px;gap:14px}
     .choice-card{width:100%;box-sizing:border-box}
-    .choice-or{padding:2px 0}
   }
 
-  /* ---- Audio screen ---- */
-  #fsw-audio{
-    font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
-    position:fixed;inset:0;z-index:50;color:#f0ede8;
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:2rem;overflow:hidden;
-    background:radial-gradient(circle at 50% 40%,#2a1808 0%,#0d1b1e 62%);
-  }
-  #fsw-audio.show{display:flex;animation:fsw-rise .5s ease both}
-  #fsw-audio::before{
-    content:"";position:absolute;width:600px;height:600px;border-radius:50%;
-    top:34%;left:50%;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(252,76,2,.12) 0%,rgba(252,76,2,0) 65%);
-    filter:blur(8px);animation:fsw-glow 5.5s ease-in-out infinite;pointer-events:none;
-  }
-  #fsw-audio .a-back{
-    position:absolute;top:22px;left:22px;z-index:2;background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);
-    font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
-    padding:9px 18px;border-radius:24px;cursor:pointer;transition:all .18s;
-  }
-  #fsw-audio .a-back:hover{color:#fff;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
-  #fsw-audio .a-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
-  #fsw-audio .eyebrow{font-size:11px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:rgba(252,76,2,.6);margin-bottom:1.1rem}
-  #fsw-audio h2{font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:#FC4C02;letter-spacing:-.02em;line-height:1.05;margin:0 0 .7rem;text-shadow:0 0 30px rgba(252,76,2,.25)}
-  #fsw-audio p.sub{font-size:.98rem;line-height:1.6;color:rgba(255,255,255,.5);max-width:440px;margin:0 auto 2.4rem}
-  .player{
-    width:100%;max-width:460px;background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:26px 24px;
-    box-shadow:0 18px 50px rgba(0,0,0,.4);
-  }
-  .player audio{width:100%;height:42px;outline:none}
-  .player .note{margin-top:16px;font-size:.78rem;color:rgba(255,255,255,.3);line-height:1.5}
-  .player .err{margin-top:14px;font-size:.8rem;color:#ff9b9b;display:none}
-
-  /* ---- Floating Listen button shown during Read ---- */
-  #fsw-listen-btm{
-    position:fixed;bottom:18px;right:24px;z-index:60;display:none;align-items:center;gap:6px;cursor:pointer;
-    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-    padding:11px 20px;border-radius:30px;transition:all .18s;
-    background:rgba(13,27,30,.82);backdrop-filter:blur(8px);
-    border:1px solid rgba(252,76,2,.45);color:#FC4C02;
-  }
-  #fsw-listen-btm.show{display:inline-flex;animation:fsw-rise .4s ease both}
-  #fsw-listen-btm:hover{color:#0d1b1e;background:#FC4C02;border-color:#FC4C02}
-  @media(max-width:600px){
-    #fsw-listen-btm{
-      position:static;display:none;margin:4px auto 22px;
-      bottom:auto;right:auto;padding:11px 22px;font-size:13px;
-    }
-    #fsw-listen-btm.show{display:flex;width:max-content;}
-  }
 </style>
 </head>
 <body>
@@ -177,13 +123,6 @@
     </svg>
     <p class="sub">How two rowers who lost their team after college built the platform that turned word of mouth into 100 million athletes.</p>
     <div class="choice-row">
-      <div class="choice-card" id="pick-audio">
-        <span class="ic">🎧</span>
-        <span class="ct">Listen</span>
-        <span class="cd">Andres's notes on what to learn and apply to your own playbook</span>
-        <span class="go">Press play <span>→</span></span>
-      </div>
-      <div class="choice-or">or</div>
       <div class="choice-card" id="pick-read">
         <span class="ic">📖</span>
         <span class="ct">Read</span>
@@ -194,46 +133,18 @@
   </div>
 </div>
 
-<!-- ============ Audio player screen ============ -->
-<div id="fsw-audio">
-  <button class="a-back" id="audio-back">‹ Back</button>
-  <div class="a-inner">
-    <p class="eyebrow">Now Playing</p>
-    <h2>The Strava Story</h2>
-    <p class="sub">Andres's notes on what to learn and apply to your own playbook. Press play below.</p>
-    <div class="player">
-      <audio id="story-audio" controls preload="metadata">
-        <!-- This relative path works once audio/ sits next to index.html in your repo -->
-        <source src="strava-story.mp3" type="audio/mpeg">
-        <source src="strava-story.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
-      </audio>
-      <p class="err" id="audio-err">Audio file not found. Make sure <b>strava-story.mp3</b> exists in the repo next to this page.</p>
-    </div>
-  </div>
-</div>
-
 <!-- ============ EXISTING: your interactive read app mounts here ============ -->
 <div id="fsw-mount"></div>
 
-<!-- ============ Floating control shown while reading (NEW) ============ -->
-<button id="fsw-listen-btm" type="button">🎧 Listen</button>
-
 <script>
-/* ---------- choice / audio / read screen wiring + analytics ---------- */
+/* ---------- choice / read screen wiring + analytics ---------- */
 (function(){
   var choice  = document.getElementById('fsw-choice');
-  var audio   = document.getElementById('fsw-audio');
   var mount   = document.getElementById('fsw-mount');
-  var player  = document.getElementById('story-audio');
-  var errEl   = document.getElementById('audio-err');
-  var listenBtm = document.getElementById('fsw-listen-btm');
 
   // ---- analytics state ----
-  var modeEnterTime = null;     // when current mode (audio/read) started
-  var currentMode = 'landing';  // 'landing' | 'audio' | 'read'
-  var audioMilestones = {};     // {25:true, 50:true,...}
-  var audioPlayStart = null;    // wall clock when last 'play' fired
+  var modeEnterTime = null;     // when current mode (read) started
+  var currentMode = 'landing';  // 'landing' | 'read'
 
   function secondsSince(ts){ return ts ? Math.round((Date.now() - ts)/1000) : 0; }
 
@@ -242,12 +153,6 @@
       var rs = secondsSince(modeEnterTime);
       if(rs > 0 && rs < 3600){ // sanity cap: ignore stale/garbage timers over 1hr
         window.track && window.track('read_session_end', { seconds_in_read: rs });
-      }
-    }
-    if(currentMode === 'audio' && modeEnterTime){
-      var as_ = secondsSince(modeEnterTime);
-      if(as_ > 0 && as_ < 3600){
-        window.track && window.track('audio_session_end', { seconds_in_audio_screen: as_ });
       }
     }
     modeEnterTime = null; // always clear after leaving, prevents double-fire/double-count
@@ -266,74 +171,15 @@
     }
   });
 
-  function showChoice(){
-    choice.classList.remove('hidden');
-    audio.classList.remove('show');
-    listenBtm.classList.remove('show');
-    mount.style.display = 'none';
-    if(player){ player.pause(); }
-    enterMode('landing');
-  }
-  function showAudio(){
-    choice.classList.add('hidden');
-    audio.classList.add('show');
-    listenBtm.classList.remove('show');
-    mount.style.display = 'none';
-    enterMode('audio');
-    window.track && window.track('choice_made', { mode: 'audio' });
-  }
   function showRead(){
     choice.classList.add('hidden');
-    audio.classList.remove('show');
-    listenBtm.classList.add('show');
     mount.style.display = 'block';
-    if(player){ player.pause(); }
     if(window.__fswStart){ window.__fswStart(); }
     enterMode('read');
     window.track && window.track('choice_made', { mode: 'read' });
   }
 
-  document.getElementById('pick-audio').addEventListener('click', showAudio);
   document.getElementById('pick-read').addEventListener('click', showRead);
-  document.getElementById('audio-back').addEventListener('click', showChoice);
-  listenBtm.addEventListener('click', showAudio);
-
-  // ---- audio analytics ----
-  if(player){
-    player.addEventListener('error', function(){ errEl.style.display='block'; });
-    player.addEventListener('play', function(){
-      audioPlayStart = Date.now();
-      window.track && window.track('audio_play', { current_time: Math.round(player.currentTime||0) });
-    });
-    player.addEventListener('pause', function(){
-      if(audioPlayStart){
-        window.track && window.track('audio_pause', {
-          current_time: Math.round(player.currentTime||0),
-          seconds_listened: secondsSince(audioPlayStart)
-        });
-        audioPlayStart = null;
-      }
-    });
-    player.addEventListener('ended', function(){
-      window.track && window.track('audio_complete', {
-        duration: Math.round(player.duration||0),
-        seconds_listened: secondsSince(audioPlayStart)
-      });
-      audioPlayStart = null;
-    });
-    player.addEventListener('timeupdate', function(){
-      if(!player.duration) return;
-      var pct = Math.floor((player.currentTime / player.duration) * 100);
-      [10,25,50,75,90].forEach(function(m){
-        if(pct >= m && !audioMilestones[m]){
-          audioMilestones[m] = true;
-          window.track && window.track('audio_progress', { percent: m });
-        }
-      });
-    });
-  }
-
-  // end-of-session tracking handled by enterMode's pagehide/visibilitychange listener above;
 
   // first event: page open
   window.track && window.track('story_opened');
