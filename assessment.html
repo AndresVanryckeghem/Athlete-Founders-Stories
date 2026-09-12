@@ -6,7 +6,12 @@
 <title>Athlete Founders — Career Assessment</title>
 
 <!-- ===== CONFIG: paste your Anthropic API key between the quotes on the next line. Leave empty to run without AI. ===== -->
-<script>window.AF_API_KEY = "";</script>
+<script>window.AF_API_KEY = "curl https://api.anthropic.com/v1/messages \
+  --header "x-api-key: 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" \
+  --header "anthropic-version: 2023-06-01" \
+  --header "content-type: application/json" \
+  --data '{"model": "claude-sonnet-4-6", "max_tokens": 1024,
+    "messages": [{"role": "user", "content": "Hello, world"}]}'";</script>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600&display=swap">
 <style>html,body,#root{margin:0;min-height:100%}body{font-family:'Archivo',-apple-system,sans-serif}</style>
